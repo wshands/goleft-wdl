@@ -1,0 +1,11 @@
+{
+  "goleft_functions.inputBamsOrCrams": [
+    "/Users/ash/Documents/aaa_test_files/bams/HG02840.bam",
+    "/Users/ash/Documents/aaa_test_files/crams/NWD119836.0005.recab.cram",
+    "/Users/ash/Documents/aaa_test_files/crams/NWD176325.recab.cram"
+  ],
+  "goleft_functions.inputIndexes": [
+    "/Users/ash/Documents/aaa_test_files/bams/HG02840.bam.bai"
+  ],
+  "goleft_functions.refGenome": "/Users/ash/Documents/aaa_test_files/ref_genomes/hs38DH/hs38DH.fa"
+}

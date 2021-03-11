@@ -1,0 +1,9 @@
+{
+  "goleft_functions.inputBamsOrCrams": [
+    "gs://topmed_workflow_testing/bravo/bams/HG02840.bam",
+    "gs://topmed_workflow_testing/topmed_aligner/input_files/NWD176325.recab.cram",
+    "gs://topmed_workflow_testing/topmed_aligner/input_files/NWD119836.0005.recab.cram"
+ ],
+  "goleft_functions.refGenome": "gs://topmed_workflow_testing/topmed_variant_caller/reference_files/hg38/hs38DH.fa"
+  
+}
