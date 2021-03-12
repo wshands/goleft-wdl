@@ -4,6 +4,7 @@ task indexcov {
 	input {
 		File inputBamOrCram
 		Array[File] allInputIndexes
+		File? refGenomeIndex # currently unused
 
 		# runtime attributes
 		Int indexcovMemory = 2
@@ -18,9 +19,8 @@ task indexcov {
 		AMIACRAM=$(echo ~{inputBamOrCram} | sed 's/\.[^.]*$//')
 
 		if [ -f ${AMIACRAM}.cram ]; then
-			>&2 echo "~{inputBamOrCram}.cram input, but this version of indexcov only runs on bams."
-			>&2 echo "Exiting task gracefully..."
-			exit 0
+			>&2 echo "Cram file detected, but crams are currently not supported."
+			exit(1)
 		else
 			if [ -f ~{inputBamOrCram}.bai ]; then
 				echo "Bai file already exists with pattern *.bam.bai"
@@ -232,6 +232,7 @@ workflow goleft_functions {
 		Array[File] inputBamsOrCrams
 		Array[File]? inputIndexes
 		File? refGenome
+		File? refGenomeIndex # currently unused
 
 		# runtime attributes with defaults
 		Int covstatsAddlDisk = 0
@@ -248,14 +249,29 @@ workflow goleft_functions {
 	# cloud localization works. There may another way to do this, however.
 	Array[String] wholeLottaNada = []
 
+	# doesn't work -- is there a WDL builtin that can print?
+	#if (length(allIndexes) != length(inputBamsOrCrams)) {
+			#echo "Warning: Not all files have an index. If all inputs are BAMs expect a slowdown in covstats."
+			#echo "In addition, indexcov will be skipped."
+	#}
+
 	scatter(oneBamOrCram in inputBamsOrCrams) {
 
 		Array[String] allOrNoIndexes = select_first([inputIndexes, wholeLottaNada])
 
-		call indexcov {
-			input: inputBamOrCram = oneBamOrCram,
-			allInputIndexes = allOrNoIndexes
+		if (length(allOrNoIndexes) == length(inputBamsOrCrams)) {
+			String thisFilename = "${basename(oneBamOrCram)}"
+			String longerIfACram = sub(thisFilename, "\\.cram", "foobarbizbuzz")
+			if (thisFilename == longerIfACram) {
+				# Only true if running on a BAM with an index
+				call indexcov {
+					input:
+						inputBamOrCram = oneBamOrCram,
+						allInputIndexes = allOrNoIndexes
+				}
+			}
 		}
+
 		call covstats as scatteredGetStats {
 			input:
 				inputBamOrCram = oneBamOrCram,
