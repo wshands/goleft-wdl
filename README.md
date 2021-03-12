@@ -6,42 +6,16 @@ The result of covstats is a text file, reports.txt, that prints the filename, re
 The result of indexcov is all of the output files associated with indexcov, which include interactive HTML files and text files. See [indexcov's github page](https://github.com/brentp/goleft/tree/master/indexcov#indexcov) for more information.
 
 ## Inputs
-* `inputBamsOrCrams` is your array of input files. As the name implies it can contain CRAM files, BAM files, or a mixture of both. Please be aware that indexcov will ignore CRAM files as it currently only works on BAMs, while covstats supports both.
-* If `inputBamsOrCrams` contains at least one CRAM file, you ***must*** also include a reference genome (`refGenome` in the input JSON). That reference genome ***must*** be the same one that was used to create the CRAM file.
-* If `inputBamsOrCrams` contains at least BAM file, you *should* also include the respective index file for your BAM(s) (`inputIndexes` in the input JSON) but it is not a hard requirement
-	* `samtools index` will be run on every BAM for which an index is not found, which can really slow things down, so if you have indicies lying around, include them
-	* They should be close in name to your BAM file(s) to be found. For instance, foo.bam should have its index be named foo.bam.bai or foo.bai
-	* For the purposes of accurate output from indexcov, your BAM files should be whole-genome but this is not strictly necessary if you are using this workflow as a test.
-* You can optionally set [runtime attributes](https://cromwell.readthedocs.io/en/stable/RuntimeAttributes/) for the tasks in this workflow as integers. They are as follows:
-		* covstatsAddlDisk
-			* default: 0
-			* additional storage size beyond size of inputs, in GB, to allocate to covstats
-			* does nothing on AWS or local runs as they scale size automagically
-		* covstatsMem
-			* default: 8
-			* memory to request for the covstats task, in GB, when running on cloud platforms
-		Int covstatsPreempt
-			* default: 1
-			* number of times to attempt to run covstats on a [preemptible instance](https://cloud.google.com/compute/docs/instances/preemptible) to save money
-			* does nothing unless executing on GCS (or Terra, which uses GCS)
-		Int indexcovAddlDisk
-			* default: 0
-			* additional storage size beyond size of inputs, in GB, to allocate to indexcov
-			* does nothing on AWS or local runs as they scale size automagically
-		Int indexcovMemory
-			* default: 2
-			* memory to request for the indexcov task, in GB, when running on cloud platforms
-		Int indexcovPrempt
-			* default: 1
-			* number of times to attempt to run covstats on a [preemptible instance](https://cloud.google.com/compute/docs/instances/preemptible) to save money
-			* does nothing unless executing on GCS (or Terra, which uses GCS)
-		Int reportMem
-			* default: 2
-			* memory to request for the report task, in GB, when running on cloud platforms
-		Int reportPreemptible
-			* default: 2
-			* number of times to attempt to run covstats on a [preemptible instance](https://cloud.google.com/compute/docs/instances/preemptible) to save money
-There's no disk size options for the report task because if you end up with over a gigabyte's worth of tiny text files, something's probably gone horribly wrong.
+`inputBamsOrCrams` is your array of input files. As the name implies it can contain CRAM files, BAM files, or a mixture of both. Please be aware that indexcov will ignore CRAM files as it currently only works on BAMs, while covstats supports both.
+
+If `inputBamsOrCrams` contains at least one CRAM file, you ***must*** also include a reference genome (`refGenome` in the input JSON). That reference genome ***must*** be the same one that was used to create the CRAM file(s). Mixing CRAM files made from difference ref genomes is not supported.
+
+If `inputBamsOrCrams` contains at least BAM file, you should also include the respective index file for your BAM(s) (`inputIndexes` in the input JSON) but it is not a hard requirement. Index files are matched to their respective BAMs using ~wizardry~ regex, so they don't need to correlate to the order of BAMs in your input array or anything like that.    
+* `samtools index` will be run on every BAM for which an index is not found, which can really slow things down, so if you have indicies lying around, include them  
+* foo.bam's index will only be found if it is called foo.bam.bai or foo.bai
+* To get accurate output from indexcov, your BAM files should be whole-genome, but this is not strictly necessary  
+
+Additionally, you can optionally set [runtime attributes](https://cromwell.readthedocs.io/en/stable/RuntimeAttributes/) for the tasks in this workflow. Due to how Cromwell works, they only actually do anything in the cloud. [See this document for a full list of runtime attributes](https://github.com/aofarrel/goleft-wdl/main/README_runtime_attributes.md).
 
 ### Why doesn't this use the existing Biocontainer for goleft? Are there any differences in functionality?
 TL;DR -- Security reasons. The main difference is that my image, due to having a different version of samtools, runs faster than the Biocontainers one at the cost of being less able to handle *incorrect* user inputs. If the user's inputs are valid -- ie, if CRAM files are being input with the same reference genome they were made with -- then handling should be equivalent.
