@@ -4,6 +4,11 @@ task indexRefGenome {
 	input {
 		# Not actually optional as only called if refGenome is defined
 		File? refGenome
+
+		# runtime attributes with defaults
+		Int indexrefMem = 2
+		Int indexrefPreempt = 1
+		Int indexrefAddlDisk = 0
 	}
 	command <<<
 		# samtools faidx tilde-curlyL-refGenome-curlyR somehow puts the fai in inputs folder
@@ -22,8 +27,19 @@ task indexRefGenome {
 		# select_first needed as basename does not work on File? types
 		File refIndex = "ref_copy.fa.fai"
 	}
+
+	# Estimate disk size required
+	Int refSize = ceil(size(refGenome, "GB"))
+	Int finalDiskSize = 2*refSize + indexrefAddlDisk
+	runtime {
+		docker: "quay.io/aofarrel/goleft-covstats:circleci-push"
+		preemptible: indexrefPreempt
+		disks: "local-disk " + finalDiskSize + " HDD"
+		memory: indexrefMem + "G"
+	}
 }
-#		 -o "whyIsThisIgnored.fai"
+
+
 
 task indexcovCRAM {
 	input {
@@ -345,6 +361,9 @@ workflow goleft_functions {
 		Int indexcovAddlDisk = 0
 		Int indexcovMemory = 2
 		Int indexcovPrempt = 1
+		Int indexrefAddlDisk = 0
+		Int indexrefMem = 2
+		Int indexrefPreempt = 1
 		Int reportMem = 2
 		Int reportPreemptible = 2
 	}
