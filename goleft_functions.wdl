@@ -2,14 +2,23 @@ version 1.0
 
 task indexRefGenome {
 	input {
-		# Not actually optional
+		# Not actually optional as only called if refGenome is defined
 		File? refGenome
 	}
-	command {
-		samtools faidx ~{refGenome} -o "~{refGenome}.fai"
-	}
+	command <<<
+		# samtools faidx seems to be ignoring dash o argument;
+		# output is always basename of the input.
+		# This means we need a goofy workaround because you cannot, ahem,
+		# tilde curlyL basename parL refGenome parR curlyR 
+		# for "optional" inputs, nor can I write that explictly as a comment
+		# or else Cromwell will try to parse it. ugh!
+
+		REFNAME=$(select_first([refGenome, "dummy second option"]))
+		BASENAME=$(basename(REFNAME))
+		samtools faidx ~{refGenome} -o "whyIsThisIgnored.fai"
+	>>>
 	output {
-		File refIndex = "~{refGenome}.fai"
+		File refIndex = "$BASENAME.fai"
 	}
 }
 
