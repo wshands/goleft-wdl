@@ -6,21 +6,24 @@ task indexRefGenome {
 		File? refGenome
 	}
 	command <<<
-		# samtools faidx seems to be ignoring dash o argument;
-		# output is always basename of the input.
-		# This means we need a goofy workaround because you cannot, ahem,
-		# tilde curlyL basename parL refGenome parR curlyR 
-		# for "optional" inputs, nor can I write that explictly as a comment
-		# or else Cromwell will try to parse it. ugh!
-
-		REFNAME=$(select_first([refGenome, "dummy second option"]))
-		BASENAME=$(basename(REFNAME))
-		samtools faidx ~{refGenome} -o "whyIsThisIgnored.fai"
+		# samtools faidx tilde-curlyL-refGenome-curlyR somehow puts the fai in inputs folder
+		# instead of the execution folder, which results in Cromwell's failure to find output.
+		# Also, -o "whatever.fai" argument in samtools is ignored. Furthermore, basename
+		# does not work on File? but we can't make refGenome required or else the overall
+		# workflow will require refGenome, which we don't want.
+		#
+		# Hence, this disgusting workaround.
+		# This basically doubles the size of disk space needed... ew.
+		cp ~{refGenome} .
+		mv "~{basename(select_first([refGenome, 'dummy']))}" "ref_copy.fa"
+		samtools faidx "ref_copy.fa"
 	>>>
 	output {
-		File refIndex = "$BASENAME.fai"
+		# select_first needed as basename does not work on File? types
+		File refIndex = "ref_copy.fa.fai"
 	}
 }
+#		 -o "whyIsThisIgnored.fai"
 
 task indexcovCRAM {
 	input {
@@ -67,7 +70,7 @@ task indexcovCRAM {
 			mkdir indexDir
 			ln -s ~{inputCram} indexDir~{basename(inputCram)}
 			ln -s ${INPUTCRAI} indexDir~{basename(inputCram)}.crai
-			goleft indexcov --extranormalize -d output/ --fai h ~{refGenomeIndex} ~{inputCram}.crai
+			goleft indexcov --extranormalize -d indexDir/ --fai ~{refGenomeIndex} ~{inputCram}.crai
 		fi
 
 	>>>
@@ -76,10 +79,11 @@ task indexcovCRAM {
 	Int thisAmSize = ceil(size(inputCram, "GB"))
 	Int finalDiskSize = indexSize + thisAmSize + indexcovAddlDisk
 	output {
-		File depthHTML = "indexDir/indexDir-indexcov-depth-20.html"
-		File depthPNG = "indexDir/indexDir-indexcov-depth-20.png"
-		File rocHTML = "indexDir/indexDir-indexcov-roc-20.html"
-		File rocPNG = "indexDir/indexDir-indexcov-roc-20.png"
+		# Crams end up with "chr" before numbers on output filenames
+		File depthHTML = "indexDir/indexDir-indexcov-depth-chr20.html"
+		File depthPNG = "indexDir/indexDir-indexcov-depth-chr20.png"
+		File rocHTML = "indexDir/indexDir-indexcov-roc-chr20.html"
+		File rocPNG = "indexDir/indexDir-indexcov-roc-chr20.png"
 		File bed = "indexDir/indexDir-indexcov.bed.gz"
 		File ped = "indexDir/indexDir-indexcov.ped"
 		File roc = "indexDir/indexDir-indexcov.roc"
@@ -145,6 +149,7 @@ task indexcovBAM {
 	Int thisAmSize = ceil(size(inputBamOrCram, "GB"))
 	Int finalDiskSize = indexSize + thisAmSize + indexcovAddlDisk
 	output {
+		# Bams do NOT end up with "chr" before numbers on output filenames
 		File depthHTML = "indexDir/indexDir-indexcov-depth-20.html"
 		File depthPNG = "indexDir/indexDir-indexcov-depth-20.png"
 		File rocHTML = "indexDir/indexDir-indexcov-roc-20.html"
