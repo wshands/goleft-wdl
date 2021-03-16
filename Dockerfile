@@ -9,6 +9,7 @@ RUN go get -u github.com/brentp/goleft/...
 RUN go install github.com/brentp/goleft/cmd/goleft
 
 # install samtools-required packages
+# these are necessary to work with crams
 RUN apt-get update
 RUN apt-get install bzip2
 RUN apt-get install zlib1g-dev

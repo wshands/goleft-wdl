@@ -1,10 +1,24 @@
 version 1.0
 
-task indexcov {
+task indexRefGenome {
 	input {
-		File inputBamOrCram
+		# Not actually optional
+		File? refGenome
+	}
+	command {
+		samtools faidx ~{refGenome} -o "~{refGenome}.fai"
+	}
+	output {
+		File refIndex = "~{refGenome}.fai"
+	}
+}
+
+task indexcovCRAM {
+	input {
+		File inputCram
 		Array[File] allInputIndexes
-		File? refGenomeIndex # currently unused
+		# Not actually optional
+		File? refGenomeIndex
 
 		# runtime attributes
 		Int indexcovMemory = 2
@@ -16,11 +30,82 @@ task indexcov {
 
 		set -eux -o pipefail
 
-		AMIACRAM=$(echo ~{inputBamOrCram} | sed 's/\.[^.]*$//')
+		# Double-check this is actually a CRAM file
+		AMIACRAM=$(echo ~{inputCram} | sed 's/\.[^.]*$//')
+		if [ -f ${AMIACRAM}.bam ]; then
+			>&2 echo "Somehow a bam file got into the cram function!"
+			>&2 echo "This shouldn't happen, please report to the dev."
+			exit 1
+		
+		else
+			if [ -f ~{inputCram}.crai ]; then
+				echo "Bai file already exists with pattern *.cram.crai"
+			elif [ -f ${AMIACRAM}.crai ]; then
+				echo "Bai file already exists with pattern *.crai"
+				mv ~{inputCram}.bai ${AMIACRAM}.cram.crai
+			else
+				echo "Input crai file not found. We searched for:"
+				echo "--------------------"
+				echo "  ~{inputCram}.crai"
+				echo "--------------------"
+				echo "  ${AMIACRAM}.crai"
+				echo "--------------------"
+				echo "Finding neither, we will index with samtools."
+				samtools index ~{inputCram} ~{inputCram}.crai
+			fi
 
+			INPUTCRAI=$(echo ~{inputCram}.crai)
+			mkdir indexDir
+			ln -s ~{inputCram} indexDir~{basename(inputCram)}
+			ln -s ${INPUTCRAI} indexDir~{basename(inputCram)}.crai
+			goleft indexcov --extranormalize -d output/ --fai h ~{refGenomeIndex} ~{inputCram}.crai
+		fi
+
+	>>>
+	# Estimate disk size required
+	Int indexSize = ceil(size(allInputIndexes, "GB"))
+	Int thisAmSize = ceil(size(inputCram, "GB"))
+	Int finalDiskSize = indexSize + thisAmSize + indexcovAddlDisk
+	output {
+		File depthHTML = "indexDir/indexDir-indexcov-depth-20.html"
+		File depthPNG = "indexDir/indexDir-indexcov-depth-20.png"
+		File rocHTML = "indexDir/indexDir-indexcov-roc-20.html"
+		File rocPNG = "indexDir/indexDir-indexcov-roc-20.png"
+		File bed = "indexDir/indexDir-indexcov.bed.gz"
+		File ped = "indexDir/indexDir-indexcov.ped"
+		File roc = "indexDir/indexDir-indexcov.roc"
+		File html = "indexDir/index.html"
+	}
+	runtime {
+		docker: "quay.io/aofarrel/goleft-covstats:circleci-push"
+		preemptible: indexcovPrempt
+		disks: "local-disk " + finalDiskSize + " HDD"
+		memory: indexcovMemory + "G"
+	}
+}
+
+task indexcovBAM {
+	input {
+		File inputBamOrCram
+		Array[File] allInputIndexes
+
+		# runtime attributes
+		Int indexcovMemory = 2
+		Int indexcovPrempt = 1
+		Int indexcovAddlDisk = 0
+	}
+
+	command <<<
+
+		set -eux -o pipefail
+
+		# Double-check this is actually a BAM file
+		AMIACRAM=$(echo ~{inputBamOrCram} | sed 's/\.[^.]*$//')
 		if [ -f ${AMIACRAM}.cram ]; then
-			>&2 echo "Cram file detected, but crams are currently not supported."
-			exit(1)
+			>&2 echo "Cram file detected in the bam task!"
+			>&2 echo "This shouldn't happen, please report to the dev."
+			exit 1
+		
 		else
 			if [ -f ~{inputBamOrCram}.bai ]; then
 				echo "Bai file already exists with pattern *.bam.bai"
@@ -29,8 +114,11 @@ task indexcov {
 				mv ~{inputBamOrCram}.bai ${AMIACRAM}.bam.bai
 			else
 				echo "Input bai file not found. We searched for:"
+				echo "--------------------"
 				echo "  ~{inputBamOrCram}.bai"
+				echo "--------------------"
 				echo "  ${AMIACRAM}.bai"
+				echo "--------------------"
 				echo "Finding neither, we will index with samtools."
 				samtools index ~{inputBamOrCram} ~{inputBamOrCram}.bai
 			fi
@@ -234,6 +322,8 @@ workflow goleft_functions {
 		File? refGenome
 		File? refGenomeIndex # currently unused
 
+		Boolean forceIndexcov = true
+
 		# runtime attributes with defaults
 		Int covstatsAddlDisk = 0
 		Int covstatsMem = 8
@@ -255,19 +345,33 @@ workflow goleft_functions {
 			#echo "In addition, indexcov will be skipped."
 	#}
 
+	if(defined(refGenome)) {
+		call indexRefGenome { input: refGenome = refGenome }
+	}
+
 	scatter(oneBamOrCram in inputBamsOrCrams) {
 
 		Array[String] allOrNoIndexes = select_first([inputIndexes, wholeLottaNada])
 
-		if (length(allOrNoIndexes) == length(inputBamsOrCrams)) {
+		if (forceIndexcov || length(allOrNoIndexes) == length(inputBamsOrCrams)) {
+
 			String thisFilename = "${basename(oneBamOrCram)}"
 			String longerIfACram = sub(thisFilename, "\\.cram", "foobarbizbuzz")
 			if (thisFilename == longerIfACram) {
-				# Only true if running on a BAM with an index
-				call indexcov {
+				# only true if running on a BAM with an index, or if forceIndexcov
+				call indexcovBAM {
 					input:
 						inputBamOrCram = oneBamOrCram,
 						allInputIndexes = allOrNoIndexes
+				}
+			}
+
+			if (thisFilename != longerIfACram) {	
+				call indexcovCRAM {
+					input:
+						inputCram = oneBamOrCram,
+						allInputIndexes = allOrNoIndexes,
+						refGenomeIndex = indexRefGenome.refIndex
 				}
 			}
 		}
