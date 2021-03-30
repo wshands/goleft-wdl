@@ -243,7 +243,7 @@ task covstats {
 
 			# Not a typo; we don't input the index directly into the call,
 			# it just needs to be in the directory
-			goleft covstats -f ~{refGenome} ~{inputBamOrCram} >> this.txt
+			goleft covstats ~{inputBamOrCram} >> this.txt
 
 			COVOUT=$(tail -n +2 this.txt)
 			read -a COVARRAY <<< "$COVOUT"
