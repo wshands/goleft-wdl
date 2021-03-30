@@ -96,10 +96,6 @@ task indexcovCRAM {
 	Int finalDiskSize = indexSize + thisAmSize + indexcovAddlDisk
 	output {
 		# Crams end up with "chr" before numbers on output filenames
-		File depthHTML = "indexDir/indexDir-indexcov-depth-chr20.html"
-		File depthPNG = "indexDir/indexDir-indexcov-depth-chr20.png"
-		File rocHTML = "indexDir/indexDir-indexcov-roc-chr20.html"
-		File rocPNG = "indexDir/indexDir-indexcov-roc-chr20.png"
 		File bed = "indexDir/indexDir-indexcov.bed.gz"
 		File ped = "indexDir/indexDir-indexcov.ped"
 		File roc = "indexDir/indexDir-indexcov.roc"
@@ -166,10 +162,6 @@ task indexcovBAM {
 	Int finalDiskSize = indexSize + thisAmSize + indexcovAddlDisk
 	output {
 		# Bams do NOT end up with "chr" before numbers on output filenames
-		File depthHTML = "indexDir/indexDir-indexcov-depth-20.html"
-		File depthPNG = "indexDir/indexDir-indexcov-depth-20.png"
-		File rocHTML = "indexDir/indexDir-indexcov-roc-20.html"
-		File rocPNG = "indexDir/indexDir-indexcov-roc-20.png"
 		File bed = "indexDir/indexDir-indexcov.bed.gz"
 		File ped = "indexDir/indexDir-indexcov.ped"
 		File roc = "indexDir/indexDir-indexcov.roc"
