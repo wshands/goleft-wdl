@@ -74,7 +74,6 @@ workflow checker {
   # Fallback if no indecies are defined
   Array[String] wholeLottaNada = []
 
-  # Call covstats
   scatter(oneBamOrCram in inputBamsOrCrams) {
     Array[String] allOrNoIndexes = select_first([inputIndexes, wholeLottaNada])
 

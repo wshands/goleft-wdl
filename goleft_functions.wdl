@@ -424,7 +424,7 @@ workflow goleft_functions {
 	meta {
 		author: "Ash O'Farrell"
 		email: "aofarrel@ucsc.edu"
-		description: "Runs some goleft functions, namely covstats and indexcov, then parses covstats output to extract read length and coverage."
+		description: "Runs the goleft functions covstats and indexcov, then parses covstats output to extract read length and coverage. If running on Terra download indexDir to read indexcov's HTML output. \nSee README.md on Github for details."
     }
 }
 
