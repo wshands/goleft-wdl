@@ -92,7 +92,7 @@ task indexcovCRAM {
 	>>>
 	# Estimate disk size required
 	Int indexSize = ceil(size(allInputIndexes, "GB"))
-	Int thisAmSize = ceil(size(inputCram, "GB"))
+	Int thisAmSize = ceil(size(inputCram, "GB")) + 1
 	Int finalDiskSize = indexSize + thisAmSize + indexcovAddlDisk
 	output {
 		# Crams end up with "chr" before numbers on output filenames
@@ -158,7 +158,7 @@ task indexcovBAM {
 	>>>
 	# Estimate disk size required
 	Int indexSize = ceil(size(allInputIndexes, "GB"))
-	Int thisAmSize = ceil(size(inputBamOrCram, "GB"))
+	Int thisAmSize = ceil(size(inputBamOrCram, "GB")) + 1
 	Int finalDiskSize = indexSize + thisAmSize + indexcovAddlDisk
 	output {
 		# Bams do NOT end up with "chr" before numbers on output filenames
@@ -261,7 +261,7 @@ task covstats {
 	# Estimate disk size required
 	Int refSize = ceil(size(refGenome, "GB"))
 	Int indexSize = ceil(size(allInputIndexes, "GB"))
-	Int thisAmSize = ceil(size(inputBamOrCram, "GB"))
+	Int thisAmSize = ceil(size(inputBamOrCram, "GB")) + 1
 
 	# If input is a cram, it will get samtools'ed into a bam,
 	# so we need to at least double its size for the disk
