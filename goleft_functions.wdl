@@ -6,9 +6,9 @@ task indexRefGenome {
 		File? refGenome
 
 		# runtime attributes with defaults
-		Int indexrefMem = 2
-		Int indexrefPreempt = 1
-		Int indexrefAddlDisk = 0
+		Int? indexrefMem
+		Int? indexrefPreempt
+		Int? indexrefAddlDisk
 	}
 	command <<<
 		# samtools faidx tilde-curlyL-refGenome-curlyR somehow puts the fai in inputs folder
@@ -30,12 +30,12 @@ task indexRefGenome {
 
 	# Estimate disk size required
 	Int refSize = ceil(size(refGenome, "GB"))
-	Int finalDiskSize = 2*refSize + indexrefAddlDisk
+	Int finalDiskSize = 2*refSize + select_first([indexrefAddlDisk, 1])
 	runtime {
 		docker: "quay.io/aofarrel/goleft-covstats:circleci-push"
-		preemptible: indexrefPreempt
+		preemptible: select_first([indexrefPreempt, 1])
 		disks: "local-disk " + finalDiskSize + " HDD"
-		memory: indexrefMem + "G"
+		memory: select_first([indexrefMem, 4]) + "G"
 	}
 }
 
@@ -49,9 +49,9 @@ task indexcovCRAM {
 		File? refGenomeIndex
 
 		# runtime attributes
-		Int indexcovMemory = 2
-		Int indexcovPrempt = 1
-		Int indexcovAddlDisk = 0
+		Int? indexcovMemory
+		Int? indexcovPrempt
+		Int? indexcovAddlDisk
 	}
 
 	command <<<
@@ -92,8 +92,8 @@ task indexcovCRAM {
 	>>>
 	# Estimate disk size required
 	Int indexSize = ceil(size(allInputIndexes, "GB"))
-	Int thisAmSize = ceil(size(inputCram, "GB")) + 1
-	Int finalDiskSize = indexSize + thisAmSize + indexcovAddlDisk
+	Int thisAmSize = ceil(size(inputCram, "GB"))
+	Int finalDiskSize = indexSize + thisAmSize + select_first([indexcovAddlDisk, 2])
 	output {
 		# Crams end up with "chr" before numbers on output filenames
 		File bed = "indexDir/indexDir-indexcov.bed.gz"
@@ -103,9 +103,9 @@ task indexcovCRAM {
 	}
 	runtime {
 		docker: "quay.io/aofarrel/goleft-covstats:circleci-push"
-		preemptible: indexcovPrempt
+		preemptible: select_first([indexcovPrempt, 1])
 		disks: "local-disk " + finalDiskSize + " HDD"
-		memory: indexcovMemory + "G"
+		memory: select_first([indexcovMemory, 4]) + "G"
 	}
 }
 
@@ -115,9 +115,9 @@ task indexcovBAM {
 		Array[File] allInputIndexes
 
 		# runtime attributes
-		Int indexcovMemory = 2
-		Int indexcovPrempt = 1
-		Int indexcovAddlDisk = 0
+		Int? indexcovMemory
+		Int? indexcovPrempt
+		Int? indexcovAddlDisk
 	}
 
 	command <<<
@@ -158,8 +158,8 @@ task indexcovBAM {
 	>>>
 	# Estimate disk size required
 	Int indexSize = ceil(size(allInputIndexes, "GB"))
-	Int thisAmSize = ceil(size(inputBamOrCram, "GB")) + 1
-	Int finalDiskSize = indexSize + thisAmSize + indexcovAddlDisk
+	Int thisAmSize = ceil(size(inputBamOrCram, "GB"))
+	Int finalDiskSize = indexSize + thisAmSize + select_first([indexcovAddlDisk, 2])
 	output {
 		# Bams do NOT end up with "chr" before numbers on output filenames
 		File bed = "indexDir/indexDir-indexcov.bed.gz"
@@ -169,9 +169,9 @@ task indexcovBAM {
 	}
 	runtime {
 		docker: "quay.io/aofarrel/goleft-covstats:circleci-push"
-		preemptible: indexcovPrempt
+		preemptible: select_first([indexcovPrempt, 1])
 		disks: "local-disk " + finalDiskSize + " HDD"
-		memory: indexcovMemory + "G"
+		memory: select_first([indexcovMemory, 4]) + "G"
 	}
 }
 
@@ -182,9 +182,9 @@ task covstats {
 		File? refGenome
 
 		# runtime attributes with defaults
-		Int covstatsMem = 2
-		Int covstatsPreempt = 1
-		Int covstatsAddlDisk = 0
+		Int? covstatsMem
+		Int? covstatsPreempt
+		Int? covstatsAddlDisk
 	}
 
 	command <<<
@@ -261,12 +261,12 @@ task covstats {
 	# Estimate disk size required
 	Int refSize = ceil(size(refGenome, "GB"))
 	Int indexSize = ceil(size(allInputIndexes, "GB"))
-	Int thisAmSize = ceil(size(inputBamOrCram, "GB")) + 1
+	Int thisAmSize = ceil(size(inputBamOrCram, "GB"))
 
 	# If input is a cram, it will get samtools'ed into a bam,
 	# so we need to at least double its size for the disk
 	# calculation.
-	Int finalDiskSize = refSize + indexSize + (2*thisAmSize) + covstatsAddlDisk
+	Int finalDiskSize = refSize + indexSize + (2*thisAmSize) + select_first([covstatsAddlDisk, 2])
 
 	output {
 		Int outReadLength = read_int("thisReadLength")
@@ -276,9 +276,9 @@ task covstats {
 	}
 	runtime {
 		docker: "quay.io/aofarrel/goleft-covstats:circleci-push"
-		preemptible: covstatsPreempt
+		preemptible: select_first([covstatsPreempt, 1])
 		disks: "local-disk " + finalDiskSize + " HDD"
-		memory: covstatsMem + "G"
+		memory: select_first([covstatsMem, 4]) + "G"
 	}
 }
 
@@ -290,8 +290,8 @@ task report {
 		Int lenReads = length(readLengths)
 		Int lenCov = length(coverages)
 		# runtime attributes
-		Int reportMemSize = 2
-		Int reportPreempt = 2
+		Int? reportMemSize
+		Int? reportPreempt
 	}
 
 	command <<<
@@ -332,8 +332,8 @@ task report {
 
 	runtime {
 		docker: "python:3.8-slim"
-		preemptible: reportPreempt
-		memory: reportMemSize + "G"
+		preemptible: select_first([reportPreempt, 3])
+		memory: select_first([reportMemSize, 2]) + "G"
 	}
 }
 
@@ -347,17 +347,17 @@ workflow goleft_functions {
 		Boolean forceIndexcov = true
 
 		# runtime attributes with defaults
-		Int covstatsAddlDisk = 0
-		Int covstatsMem = 8
-		Int covstatsPreempt = 1
-		Int indexcovAddlDisk = 0
-		Int indexcovMemory = 2
-		Int indexcovPrempt = 1
-		Int indexrefAddlDisk = 0
-		Int indexrefMem = 2
-		Int indexrefPreempt = 1
-		Int reportMem = 2
-		Int reportPreemptible = 2
+		Int? covstatsAddlDisk
+		Int? covstatsMem
+		Int? covstatsPreempt
+		Int? indexcovAddlDisk
+		Int? indexcovMemory
+		Int? indexcovPrempt
+		Int? indexrefAddlDisk
+		Int? indexrefMem
+		Int? indexrefPreempt
+		Int? reportMem
+		Int? reportPreemptible
 	}
 
 	# Weird way to fallback if no indicies are defined, necessary due to how
