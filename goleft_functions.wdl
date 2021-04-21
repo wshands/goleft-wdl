@@ -96,10 +96,7 @@ task indexcovCRAM {
 	Int finalDiskSize = indexSize + thisAmSize + select_first([indexcovAddlDisk, 2])
 	output {
 		# Crams end up with "chr" before numbers on output filenames
-		File bed = "indexDir/indexDir-indexcov.bed.gz"
-		File ped = "indexDir/indexDir-indexcov.ped"
-		File roc = "indexDir/indexDir-indexcov.roc"
-		File html = "indexDir/index.html"
+		Array[File] indexout = glob("indexDir/*")
 	}
 	runtime {
 		docker: "quay.io/aofarrel/goleft-covstats:circleci-push"
@@ -162,10 +159,7 @@ task indexcovBAM {
 	Int finalDiskSize = indexSize + thisAmSize + select_first([indexcovAddlDisk, 2])
 	output {
 		# Bams do NOT end up with "chr" before numbers on output filenames
-		File bed = "indexDir/indexDir-indexcov.bed.gz"
-		File ped = "indexDir/indexDir-indexcov.ped"
-		File roc = "indexDir/indexDir-indexcov.roc"
-		File html = "indexDir/index.html"
+		Array[File] indexout = glob("indexDir/*")
 	}
 	runtime {
 		docker: "quay.io/aofarrel/goleft-covstats:circleci-push"
