@@ -69,7 +69,7 @@ task indexcovCRAM {
 				echo "Crai file already exists with pattern *.cram.crai"
 			elif [ -f ${AMIACRAM}.crai ]; then
 				echo "Crai file already exists with pattern *.crai"
-				mv ~{inputCram}.bai ${AMIACRAM}.cram.crai
+				mv ~{inputCram}.crai ${AMIACRAM}.cram.crai
 			else
 				echo "Input crai file not found. We searched for:"
 				echo "--------------------"
