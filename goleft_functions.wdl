@@ -1,31 +1,36 @@
 version 1.0
 
 task indexRefGenome {
+	# This task only gets called if the refGenome is defined, but we cannot
+	# make the refGenome non-optional here unless we want the refGenome to
+	# be non-optional for the entire pipeline. We don't want that because
+	# the refGenome isn't actually needed at all for some situations.
 	input {
-		# Not actually optional as only called if refGenome is defined
 		File? refGenome
 
 		# runtime attributes with defaults
-		Int? indexrefMem
-		Int? indexrefPreempt
-		Int? indexrefAddlDisk
+		Int indexrefMem = 4
+		Int indexrefPreempt = 1
+		Int indexrefAddlDisk = 1
 	}
+	# Estimate disk size required
+	Int refSize = ceil(size(refGenome, "GB"))
+	Int finalDiskSize = 2*refSize + indexrefAddlDisk
+	
 	command <<<
 		ln -s ~{refGenome} .
 		samtools faidx ~{basename(select_first([refGenome, 'dummy']))}
 	>>>
+	
 	output {
 		File refIndex = glob("*.fai")[0]
 	}
 
-	# Estimate disk size required
-	Int refSize = ceil(size(refGenome, "GB"))
-	Int finalDiskSize = 2*refSize + select_first([indexrefAddlDisk, 1])
 	runtime {
 		docker: "quay.io/aofarrel/goleft-covstats:circleci-push"
-		preemptible: select_first([indexrefPreempt, 1])
+		preemptible: indexrefPreempt
 		disks: "local-disk " + finalDiskSize + " HDD"
-		memory: select_first([indexrefMem, 4]) + "G"
+		memory: indexrefMem + "G"
 	}
 }
 
