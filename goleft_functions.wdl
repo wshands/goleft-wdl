@@ -11,14 +11,6 @@ task indexRefGenome {
 		Int? indexrefAddlDisk
 	}
 	command <<<
-		# samtools faidx tilde-curlyL-refGenome-curlyR somehow puts the fai in inputs folder
-		# instead of the execution folder, which results in Cromwell's failure to find output.
-		# Also, -o "whatever.fai" argument in samtools is ignored. Furthermore, basename
-		# does not work on File? but we can't make refGenome required or else the overall
-		# workflow will require refGenome, which we don't want.
-		#
-		# Hence, this disgusting workaround.
-		# This basically doubles the size of disk space needed... ew.
 		cp ~{refGenome} .
 		mv "~{basename(select_first([refGenome, 'dummy']))}" "ref_copy.fa"
 		samtools faidx "ref_copy.fa"
