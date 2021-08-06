@@ -69,7 +69,7 @@ task indexcovCRAM {
 				echo "Crai file already exists with pattern *.cram.crai"
 			elif [ -f ${AMIACRAM}.crai ]; then
 				echo "Crai file already exists with pattern *.crai"
-				mv ~{inputCram}.crai ${AMIACRAM}.cram.crai
+				mv ${AMIACRAM}.crai ${AMIACRAM}.cram.crai
 			else
 				echo "Input crai file not found. We searched for:"
 				echo "--------------------"
@@ -104,7 +104,7 @@ task indexcovCRAM {
 }
 
 task indexcovBAM {
-	# Indexcov, when run on bams, doesn't need a refGenome, but it does need
+	# Indexcov, when run on bams, doesn't need a refGenome index, but it does need
 	# each and every bam to have an index file.
 	input {
 		File inputBamOrCram
@@ -137,7 +137,7 @@ task indexcovBAM {
 				echo "Bai file already exists with pattern *.bam.bai"
 			elif [ -f ${AMIACRAM}.bai ]; then
 				echo "Bai file already exists with pattern *.bai"
-				mv ~{inputBamOrCram}.bai ${AMIACRAM}.bam.bai
+				mv ${AMIACRAM}.bai ${AMIACRAM}.bam.bai
 			else
 				echo "Input bai file not found. We searched for:"
 				echo "--------------------"
@@ -185,7 +185,8 @@ task covstats {
 
 	command <<<
 
-		echo "Be aware that this does not use the goleft container provided by Biocontainers, which may have some implications for debugging. See README.md on Github for more information."
+		echo "Be aware that this does not use the goleft container provided by Biocontainers,"
+		echo "which may have implications for debugging. See README.md on Github for more info."
 
 		start=$SECONDS
 		set -eux -o pipefail
