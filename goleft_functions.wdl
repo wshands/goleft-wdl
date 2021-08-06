@@ -104,21 +104,28 @@ task indexcovCRAM {
 }
 
 task indexcovBAM {
+	# Indexcov, when run on bams, doesn't need a refGenome, but it does need
+	# each and every bam to have an index file.
 	input {
 		File inputBamOrCram
 		Array[File] allInputIndexes
 
 		# runtime attributes
-		Int? indexcovMemory
-		Int? indexcovPrempt
-		Int? indexcovAddlDisk
+		Int indexcovMemory = 4
+		Int indexcovPrempt = 1
+		Int indexcovAddlDisk = 2
 	}
+
+	# Estimate disk size required
+	Int indexSize = ceil(size(allInputIndexes, "GB"))
+	Int thisAmSize = ceil(size(inputBamOrCram, "GB"))
+	Int finalDiskSize = indexSize + thisAmSize + indexcovAddlDisk
 
 	command <<<
 
 		set -eux -o pipefail
 
-		# Double-check this is actually a BAM file
+		# Double-check this is actually a bam file
 		AMIACRAM=$(echo ~{inputBamOrCram} | sed 's/\.[^.]*$//')
 		if [ -f ${AMIACRAM}.cram ]; then
 			>&2 echo "Cram file detected in the bam task!"
@@ -150,19 +157,17 @@ task indexcovBAM {
 		fi
 
 	>>>
-	# Estimate disk size required
-	Int indexSize = ceil(size(allInputIndexes, "GB"))
-	Int thisAmSize = ceil(size(inputBamOrCram, "GB"))
-	Int finalDiskSize = indexSize + thisAmSize + select_first([indexcovAddlDisk, 2])
+	
 	output {
 		# Bams do NOT end up with "chr" before numbers on output filenames
 		Array[File] indexout = glob("indexDir/*")
 	}
+	
 	runtime {
 		docker: "quay.io/aofarrel/goleft-covstats:circleci-push"
-		preemptible: select_first([indexcovPrempt, 1])
+		preemptible: indexcovPrempt
 		disks: "local-disk " + finalDiskSize + " HDD"
-		memory: select_first([indexcovMemory, 4]) + "G"
+		memory: indexcovMemory + "G"
 	}
 }
 
