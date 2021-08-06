@@ -63,6 +63,21 @@ task check_covstats {
 
 }
 
+task check_indexcov {
+
+
+
+  runtime {
+    docker: "python:3.8-slim"
+    preemptible: 2
+  }
+
+}
+
+
+
+
+
 workflow checker {
   input {
     File truth
