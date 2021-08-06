@@ -8,7 +8,7 @@ task indexRefGenome {
 	input {
 		File? refGenome
 
-		# runtime attributes with defaults
+		# runtime attributes
 		Int indexrefMem = 4
 		Int indexrefPreempt = 1
 		Int indexrefAddlDisk = 1
@@ -34,26 +34,29 @@ task indexRefGenome {
 	}
 }
 
-
-
 task indexcovCRAM {
+	# This task is only called if the user either input a ref genome index or
+	# we created one earlier in the indexRefGenome task, so again, we have
+	# an "optional" file here that is always going to be defined.
 	input {
 		File inputCram
 		Array[File] allInputIndexes
-		# Not actually optional
 		File? refGenomeIndex
 
 		# runtime attributes
-		Int? indexcovMemory
-		Int? indexcovPrempt
-		Int? indexcovAddlDisk
+		Int indexcovMemory = 4
+		Int indexcovPrempt = 1
+		Int indexcovAddlDisk = 2
 	}
+	# Estimate disk size required
+	Int indexSize = ceil(size(allInputIndexes, "GB"))
+	Int thisAmSize = ceil(size(inputCram, "GB"))
+	Int finalDiskSize = indexSize + thisAmSize + indexcovAddlDisk
 
 	command <<<
-
 		set -eux -o pipefail
 
-		# Double-check this is actually a CRAM file
+		# Double-check this is actually a cram file
 		AMIACRAM=$(echo ~{inputCram} | sed 's/\.[^.]*$//')
 		if [ -f ${AMIACRAM}.bam ]; then
 			>&2 echo "Somehow a bam file got into the cram function!"
@@ -61,10 +64,11 @@ task indexcovCRAM {
 			exit 1
 		
 		else
+			# Check if an index file for the cram input exists
 			if [ -f ~{inputCram}.crai ]; then
-				echo "Bai file already exists with pattern *.cram.crai"
+				echo "Crai file already exists with pattern *.cram.crai"
 			elif [ -f ${AMIACRAM}.crai ]; then
-				echo "Bai file already exists with pattern *.crai"
+				echo "Crai file already exists with pattern *.crai"
 				mv ~{inputCram}.bai ${AMIACRAM}.cram.crai
 			else
 				echo "Input crai file not found. We searched for:"
@@ -85,19 +89,17 @@ task indexcovCRAM {
 		fi
 
 	>>>
-	# Estimate disk size required
-	Int indexSize = ceil(size(allInputIndexes, "GB"))
-	Int thisAmSize = ceil(size(inputCram, "GB"))
-	Int finalDiskSize = indexSize + thisAmSize + select_first([indexcovAddlDisk, 2])
+
 	output {
 		# Crams end up with "chr" before numbers on output filenames
 		Array[File] indexout = glob("indexDir/*")
 	}
+	
 	runtime {
 		docker: "quay.io/aofarrel/goleft-covstats:circleci-push"
-		preemptible: select_first([indexcovPrempt, 1])
+		preemptible: indexcovPrempt
 		disks: "local-disk " + finalDiskSize + " HDD"
-		memory: select_first([indexcovMemory, 4]) + "G"
+		memory: indexcovMemory + "G"
 	}
 }
 
