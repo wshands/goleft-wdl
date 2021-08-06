@@ -11,13 +11,11 @@ task indexRefGenome {
 		Int? indexrefAddlDisk
 	}
 	command <<<
-		cp ~{refGenome} .
-		mv "~{basename(select_first([refGenome, 'dummy']))}" "ref_copy.fa"
-		samtools faidx "ref_copy.fa"
+		ln -s ~{refGenome} .
+		samtools faidx ~{basename(select_first([refGenome, 'dummy']))}
 	>>>
 	output {
-		# select_first needed as basename does not work on File? types
-		File refIndex = "ref_copy.fa.fai"
+		File refIndex = glob("*.fai")[0]
 	}
 
 	# Estimate disk size required
