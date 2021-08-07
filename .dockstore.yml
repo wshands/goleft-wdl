@@ -1,7 +1,7 @@
 version: 1.2
 workflows:
-        - name: goleft-wdl
-        subclass: WDL
-        primaryDescriptorPath: /goleft_functions.wdl
-        testParameterFiles:
-            - /goleft_terra.json
+   - subclass: WDL
+     primaryDescriptorPath: goleft_functions.wdl
+     testParameterFiles:
+         - goleft_terra.json
+     name: goleft-wdl
