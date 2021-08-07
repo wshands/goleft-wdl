@@ -172,16 +172,42 @@ task indexcovBAM {
 }
 
 task covstats {
+	# The complexity of this task is due to the complexity of input requirements.
+	#
+	# If the input is a CRAM:
+	# * requires a reference genome and WILL fail if not provided
+	# * the reference genome must be passed into goleft
+	# * does NOT require a cram index file
+	#
+	# If the input is a BAM:
+	# * requires a bam index file but will NOT fail if not provided
+	# * the bam index file must be in the working directory
+	# * does NOT require a reference genome
+	#
+	# Furthermore, indexing bams take a long time, so we pass in every index file
+	# we have in hopes that one of them will be a matching bam index. If we don't
+	# find one then we will index the bam ourselves. This is why we don't fail out.
+	# In the cram case, we can't make a reference genome out of thin air, so without
+	# a reference genome we must bail. Side note -- neither bams nor crams need a 
+	# reference genome index. That's only necessary in indexcov.
 	input {
 		File inputBamOrCram
 		Array[File] allInputIndexes
 		File? refGenome
 
-		# runtime attributes with defaults
-		Int? covstatsMem
-		Int? covstatsPreempt
-		Int? covstatsAddlDisk
+		# runtime attributes
+		Int covstatsMem = 4
+		Int covstatsPreempt = 2
+		Int covstatsAddlDisk = 2
 	}
+	# Estimate disk size required
+	Int refSize = ceil(size(refGenome, "GB"))
+	Int indexSize = ceil(size(allInputIndexes, "GB"))
+	Int thisAmSize = ceil(size(inputBamOrCram, "GB"))
+
+	# If input is a cram, it will get samtools'ed into a bam, so we need to 
+	# account for that. Thankfully a cram should always be smaller than a bam.
+	Int finalDiskSize = refSize + indexSize + (2*thisAmSize) + covstatsAddlDisk
 
 	command <<<
 
@@ -191,18 +217,17 @@ task covstats {
 		start=$SECONDS
 		set -eux -o pipefail
 
-		# Detect if inputBamOrCram is a BAM or a CRAM file
-		# A CRAM file requires a reference genome but not an index file
-		# A BAM file requires an index file but not a reference genome
+		# Detect if inputBamOrCram is a bam or a cram file
 		AMIACRAM=$(echo ~{inputBamOrCram} | sed 's/\.[^.]*$//')
 
 		if [ -f ${AMIACRAM}.cram ]; then
 			echo "Cram file detected"
 
-			# Check if reference genome exists
+			# We have a cram, now check if reference genome exists
 			if [ "~{refGenome}" != '' ]; then
+
 				goleft covstats -f ~{refGenome} ~{inputBamOrCram} >> this.txt
-				# Sometimes this.txt seems to be missing the header... investigate
+
 				COVOUT=$(tail -n +2 this.txt)
 				read -a COVARRAY <<< "$COVOUT"
 				echo ${COVARRAY[0]} > thisCoverage
@@ -219,7 +244,7 @@ task covstats {
 
 		else
 
-			# We now know it's a BAM file and must search for an index file
+			# We now know it's a bam file and must search for an index file
 			# or make one ourselves with samtools
 			OTHERPOSSIBILITY=$(echo ~{inputBamOrCram} | sed 's/\.[^.]*$//')
 
@@ -238,8 +263,6 @@ task covstats {
 				samtools index ~{inputBamOrCram} ~{inputBamOrCram}.bai
 			fi
 
-			# Not a typo; we don't input the index directly into the call,
-			# it just needs to be in the directory
 			goleft covstats ~{inputBamOrCram} >> this.txt
 
 			COVOUT=$(tail -n +2 this.txt)
@@ -255,16 +278,6 @@ task covstats {
 
 	>>>
 
-	# Estimate disk size required
-	Int refSize = ceil(size(refGenome, "GB"))
-	Int indexSize = ceil(size(allInputIndexes, "GB"))
-	Int thisAmSize = ceil(size(inputBamOrCram, "GB"))
-
-	# If input is a cram, it will get samtools'ed into a bam,
-	# so we need to at least double its size for the disk
-	# calculation.
-	Int finalDiskSize = refSize + indexSize + (2*thisAmSize) + select_first([covstatsAddlDisk, 2])
-
 	output {
 		Int outReadLength = read_int("thisReadLength")
 		Float outCoverage = read_float("thisCoverage")
@@ -273,9 +286,9 @@ task covstats {
 	}
 	runtime {
 		docker: "quay.io/aofarrel/goleft-covstats:circleci-push"
-		preemptible: select_first([covstatsPreempt, 1])
+		preemptible: covstatsPreempt
 		disks: "local-disk " + finalDiskSize + " HDD"
-		memory: select_first([covstatsMem, 4]) + "G"
+		memory: covstatsMem + "G"
 	}
 }
 
