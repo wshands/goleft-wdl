@@ -299,9 +299,11 @@ task report {
 		Array[String] filenames
 		Int lenReads = length(readLengths)
 		Int lenCov = length(coverages)
+		
 		# runtime attributes
-		Int? reportMemSize
-		Int? reportPreempt
+		Int reportMemSize = 3
+		Int reportPreempt = 2
+		Int reportDiskSize = 1
 	}
 
 	command <<<
@@ -341,9 +343,10 @@ task report {
 	}
 
 	runtime {
+		disks: "local-disk " + reportDiskSize + " HDD"
 		docker: "python:3.8-slim"
-		preemptible: select_first([reportPreempt, 3])
-		memory: select_first([reportMemSize, 2]) + "G"
+		preemptible: reportPreempt
+		memory: reportMemSize + "G"
 	}
 }
 
