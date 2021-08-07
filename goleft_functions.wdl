@@ -352,36 +352,14 @@ task report {
 
 workflow goleft_functions {
 	input {
+		Boolean forceIndexcov = true
 		Array[File] inputBamsOrCrams
 		Array[File]? inputIndexes
 		File? refGenome
 		File? refGenomeIndex # currently unused
-
-		Boolean forceIndexcov = true
-
-		# runtime attributes with defaults
-		Int? covstatsAddlDisk
-		Int? covstatsMem
-		Int? covstatsPreempt
-		Int? indexcovAddlDisk
-		Int? indexcovMemory
-		Int? indexcovPrempt
-		Int? indexrefAddlDisk
-		Int? indexrefMem
-		Int? indexrefPreempt
-		Int? reportMem
-		Int? reportPreemptible
 	}
 
-	# Weird way to fallback if no indicies are defined, necessary due to how
-	# cloud localization works. There may another way to do this, however.
-	Array[String] wholeLottaNada = []
-
-	# doesn't work -- is there a WDL builtin that can print?
-	#if (length(allIndexes) != length(inputBamsOrCrams)) {
-			#echo "Warning: Not all files have an index. If all inputs are BAMs expect a slowdown in covstats."
-			#echo "In addition, indexcov will be skipped."
-	#}
+	Array[String] emptyArray = []
 
 	if(defined(refGenome)) {
 		call indexRefGenome { input: refGenome = refGenome }
@@ -389,14 +367,19 @@ workflow goleft_functions {
 
 	scatter(oneBamOrCram in inputBamsOrCrams) {
 
-		Array[String] allOrNoIndexes = select_first([inputIndexes, wholeLottaNada])
+		Array[String] allOrNoIndexes = select_first([inputIndexes, emptyArray])
 
 		if (forceIndexcov || length(allOrNoIndexes) == length(inputBamsOrCrams)) {
 
 			String thisFilename = "${basename(oneBamOrCram)}"
 			String longerIfACram = sub(thisFilename, "\\.cram", "foobarbizbuzz")
+			
 			if (thisFilename == longerIfACram) {
-				# only true if running on a BAM with an index, or if forceIndexcov
+				# This rings true in the following situations:
+				# * This is a bam, and forceIndexCov is true
+				# * This is a bam, and we have one index file per input bam/cram input
+				# We are hoping that the second case means that the bam has an index file
+				# and we won't have to index it ourselves, but this isn't certain
 				call indexcovBAM {
 					input:
 						inputBamOrCram = oneBamOrCram,
@@ -404,7 +387,7 @@ workflow goleft_functions {
 				}
 			}
 
-			if (thisFilename != longerIfACram) {	
+			if (thisFilename != longerIfACram) {
 				call indexcovCRAM {
 					input:
 						inputCram = oneBamOrCram,
@@ -418,10 +401,7 @@ workflow goleft_functions {
 			input:
 				inputBamOrCram = oneBamOrCram,
 				refGenome = refGenome,
-				allInputIndexes = allOrNoIndexes,
-				covstatsMem = covstatsMem,
-				covstatsAddlDisk = covstatsAddlDisk,
-				covstatsPreempt = covstatsPreempt
+				allInputIndexes = allOrNoIndexes
 		}
 	}
 
@@ -429,9 +409,7 @@ workflow goleft_functions {
 		input:
 			readLengths = scatteredGetStats.outReadLength,
 			coverages = scatteredGetStats.outCoverage,
-			filenames = scatteredGetStats.outFilenames,
-			reportMemSize = reportMem,
-			reportPreempt = reportPreemptible
+			filenames = scatteredGetStats.outFilenames
 	}
 
 	meta {
