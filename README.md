@@ -14,7 +14,7 @@ If `inputBamsOrCrams` contains at least one CRAM file:
 * That reference genome ***must*** be the same one that was used to create the CRAM file(s)
 * Mixing CRAM files made from different ref genomes is not supported 
 
-If `inputBamsOrCrams` contains at least BAM file:
+If `inputBamsOrCrams` contains at least one BAM file:
 * You should also include the respective index file for your BAM(s) (`inputIndexes` in the input JSON) but it is not a hard requirement  
 * `samtools index` will be run on every BAM for which an index is not found, which can really slow things down, so if you have indicies lying around, include them  
 * foo.bam's index will only be found if it is called foo.bam.bai or foo.bai
