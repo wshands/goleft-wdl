@@ -59,7 +59,7 @@ task indexcovCRAM {
 		# Double-check this is actually a cram file
 		FILE_EXT=$(echo ~{inputCram} | sed 's/.*\.//')
 		FILE_BASE=$(echo ~{inputCram} | sed 's/\.[^.]*$//')
-		if [ "$FILE_EXTENSION" = "cram" || "$FILE_EXTENSION" = "CRAM" ]; then
+		if [ "$FILE_EXT" = "cram" || "$FILE_EXT" = "CRAM" ]; then
 			# Check if an index file for the cram input exists
 			if [ -f ~{inputCram}.crai ]; then
 				echo "Crai file already exists with pattern *.cram.crai"
@@ -110,7 +110,7 @@ task indexcovBAM {
 	# Indexcov, when run on bams, doesn't need a refGenome index, but it does need
 	# each and every bam to have an index file.
 	input {
-		File inputBamOrCram
+		File inputBam
 		Array[File] allInputIndexes
 
 		# runtime attributes
@@ -121,7 +121,7 @@ task indexcovBAM {
 
 	# Estimate disk size required
 	Int indexSize = ceil(size(allInputIndexes, "GB"))
-	Int thisAmSize = ceil(size(inputBamOrCram, "GB"))
+	Int thisAmSize = ceil(size(inputBam, "GB"))
 	Int finalDiskSize = indexSize + thisAmSize + indexcovAddlDisk
 
 	command <<<
@@ -129,29 +129,29 @@ task indexcovBAM {
 		set -eux -o pipefail
 
 		# Double-check this is actually a bam file
-		FILE_EXT=$(echo ~{inputCram} | sed 's/.*\.//')
-		FILE_BASE=$(echo ~{inputBamOrCram} | sed 's/\.[^.]*$//')
-		if [ "$FILE_EXTENSION" = "bam" || "$FILE_EXTENSION" = "BAM" ]; then
-			if [ -f ~{inputBamOrCram}.bai ]; then
+		FILE_EXT=$(echo ~{inputBam} | sed 's/.*\.//')
+		FILE_BASE=$(echo ~{inputBam} | sed 's/\.[^.]*$//')
+		if [ "$FILE_EXT" = "bam" || "$FILE_EXT" = "BAM" ]; then
+			if [ -f ~{inputBam}.bai ]; then
 				echo "Bai file already exists with pattern *.bam.bai"
-			elif [ -f ${FILE_BASE}.bai ]; then
+			elif [ -f ${inputBam}.bai ]; then
 				echo "Bai file already exists with pattern *.bai"
 				mv ${FILE_BASE}.bai ${FILE_BASE}.bam.bai
 			else
 				echo "Input bai file not found. We searched for:"
 				echo "--------------------"
-				echo "  ~{inputBamOrCram}.bai"
+				echo "  ~{inputBam}.bai"
 				echo "--------------------"
 				echo "  ${FILE_BASE}.bai"
 				echo "--------------------"
 				echo "Finding neither, we will index with samtools."
-				samtools index ~{inputBamOrCram} ~{inputBamOrCram}.bai
+				samtools index ~{inputBam} ~{inputBam}.bai
 			fi
 
-			INPUTBAI=$(echo ~{inputBamOrCram}.bai)
+			INPUTBAI=$(echo ~{inputBam}.bai)
 			mkdir indexDir
-			ln -s ~{inputBamOrCram} indexDir~{basename(inputBamOrCram)}
-			ln -s ${INPUTBAI} indexDir~{basename(inputBamOrCram)}.bai
+			ln -s ~{inputBam} indexDir~{basename(inputBam)}
+			ln -s ${INPUTBAI} indexDir~{basename(inputBam)}.bai
 			goleft indexcov --directory indexDir/ *.bam
 
 		elif [ -f ${FILE_BASE}.cram ]; then
@@ -388,7 +388,7 @@ workflow goleft_functions {
 				# and we won't have to index it ourselves, but this isn't certain
 				call indexcovBAM {
 					input:
-						inputBamOrCram = oneBamOrCram,
+						inputBam = oneBamOrCram,
 						allInputIndexes = allOrNoIndexes
 				}
 			}
