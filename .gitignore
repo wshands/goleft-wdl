@@ -3,4 +3,3 @@ cromwell-input/*
 .DS_Store
 Cromwell.stderr.txt
 Cromwell.stdout.txt
-.DS_Store

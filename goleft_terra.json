@@ -1,9 +1,15 @@
 {
   "goleft_functions.inputBamsOrCrams": [
     "gs://topmed_workflow_testing/bravo/bams/HG02840.bam",
+    "gs://topmed_workflow_testing/bravo/bams/NA19130.bam",
     "gs://topmed_workflow_testing/topmed_aligner/input_files/NWD176325.recab.cram",
+    "gs://topmed_workflow_testing/topmed_aligner/input_files/NWD136397.0005.recab.cram",
     "gs://topmed_workflow_testing/topmed_aligner/input_files/NWD119836.0005.recab.cram"
  ],
+  "goleft_functions.inputIndexes": [
+    "gs://topmed_workflow_testing/bravo/bams/NA18995.bam.bai",
+    "gs://topmed_workflow_testing/topmed_aligner/input_files/NWD136397.0005.recab.cram.crai",
+    "gs://topmed_workflow_testing/goleft/renamed_crai/NWD119836.0005.recab.crai"
+  ],
   "goleft_functions.refGenome": "gs://topmed_workflow_testing/topmed_variant_caller/reference_files/hg38/hs38DH.fa"
-  
 }
