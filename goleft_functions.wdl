@@ -57,25 +57,21 @@ task indexcovCRAM {
 		set -eux -o pipefail
 
 		# Double-check this is actually a cram file
-		AMIACRAM=$(echo ~{inputCram} | sed 's/\.[^.]*$//')
-		if [ -f ${AMIACRAM}.bam ]; then
-			>&2 echo "Somehow a bam file got into the cram function!"
-			>&2 echo "This shouldn't happen, please report to the dev."
-			exit 1
-		
-		else
+		FILE_EXT=$(echo ~{inputCram} | sed 's/.*\.//')
+		FILE_BASE=$(echo ~{inputCram} | sed 's/\.[^.]*$//')
+		if [ "$FILE_EXTENSION" = "cram" || "$FILE_EXTENSION" = "CRAM" ]; then
 			# Check if an index file for the cram input exists
 			if [ -f ~{inputCram}.crai ]; then
 				echo "Crai file already exists with pattern *.cram.crai"
-			elif [ -f ${AMIACRAM}.crai ]; then
+			elif [ -f ${FILE_BASE}.crai ]; then
 				echo "Crai file already exists with pattern *.crai"
-				mv ${AMIACRAM}.crai ${AMIACRAM}.cram.crai
+				mv ${FILE_BASE}.crai ${FILE_BASE}.cram.crai
 			else
 				echo "Input crai file not found. We searched for:"
 				echo "--------------------"
 				echo "  ~{inputCram}.crai"
 				echo "--------------------"
-				echo "  ${AMIACRAM}.crai"
+				echo "  ${FILE_BASE}.crai"
 				echo "--------------------"
 				echo "Finding neither, we will index with samtools."
 				samtools index ~{inputCram} ~{inputCram}.crai
@@ -86,6 +82,13 @@ task indexcovCRAM {
 			ln -s ~{inputCram} indexDir~{basename(inputCram)}
 			ln -s ${INPUTCRAI} indexDir~{basename(inputCram)}.crai
 			goleft indexcov --extranormalize -d indexDir/ --fai ~{refGenomeIndex} ~{inputCram}.crai
+
+		elif [ -f ${FILE_BASE}.bam ]; then
+			>&2 echo "Somehow a bam file got into the cram function!"
+			>&2 echo "This shouldn't happen, please report to the dev."
+			exit 1
+		else
+			>&2 echo "Unknown file input, please report to the dev."
 		fi
 
 	>>>
@@ -126,24 +129,20 @@ task indexcovBAM {
 		set -eux -o pipefail
 
 		# Double-check this is actually a bam file
-		AMIACRAM=$(echo ~{inputBamOrCram} | sed 's/\.[^.]*$//')
-		if [ -f ${AMIACRAM}.cram ]; then
-			>&2 echo "Cram file detected in the bam task!"
-			>&2 echo "This shouldn't happen, please report to the dev."
-			exit 1
-		
-		else
+		FILE_EXT=$(echo ~{inputCram} | sed 's/.*\.//')
+		FILE_BASE=$(echo ~{inputBamOrCram} | sed 's/\.[^.]*$//')
+		if [ "$FILE_EXTENSION" = "bam" || "$FILE_EXTENSION" = "BAM" ]; then
 			if [ -f ~{inputBamOrCram}.bai ]; then
 				echo "Bai file already exists with pattern *.bam.bai"
-			elif [ -f ${AMIACRAM}.bai ]; then
+			elif [ -f ${FILE_BASE}.bai ]; then
 				echo "Bai file already exists with pattern *.bai"
-				mv ${AMIACRAM}.bai ${AMIACRAM}.bam.bai
+				mv ${FILE_BASE}.bai ${FILE_BASE}.bam.bai
 			else
 				echo "Input bai file not found. We searched for:"
 				echo "--------------------"
 				echo "  ~{inputBamOrCram}.bai"
 				echo "--------------------"
-				echo "  ${AMIACRAM}.bai"
+				echo "  ${FILE_BASE}.bai"
 				echo "--------------------"
 				echo "Finding neither, we will index with samtools."
 				samtools index ~{inputBamOrCram} ~{inputBamOrCram}.bai
@@ -154,6 +153,13 @@ task indexcovBAM {
 			ln -s ~{inputBamOrCram} indexDir~{basename(inputBamOrCram)}
 			ln -s ${INPUTBAI} indexDir~{basename(inputBamOrCram)}.bai
 			goleft indexcov --directory indexDir/ *.bam
+
+		elif [ -f ${FILE_BASE}.cram ]; then
+			>&2 echo "Cram file detected in the bam task!"
+			>&2 echo "This shouldn't happen, please report to the dev."
+			exit 1
+		else
+			>&2 echo "Unknown file input, please report to the dev."
 		fi
 
 	>>>
@@ -218,9 +224,9 @@ task covstats {
 		set -eux -o pipefail
 
 		# Detect if inputBamOrCram is a bam or a cram file
-		AMIACRAM=$(echo ~{inputBamOrCram} | sed 's/\.[^.]*$//')
+		FILE_BASE=$(echo ~{inputBamOrCram} | sed 's/\.[^.]*$//')
 
-		if [ -f ${AMIACRAM}.cram ]; then
+		if [ -f ${FILE_BASE}.cram ]; then
 			echo "Cram file detected"
 
 			# We have a cram, now check if reference genome exists
