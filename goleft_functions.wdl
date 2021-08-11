@@ -418,6 +418,12 @@ workflow goleft_functions {
 			filenames = scatteredGetStats.outFilenames
 	}
 
+	output {
+		File covstats_report = report.finalOut
+		Array[Array[File]?] indexcov_of_bams = indexcovBAM.indexout
+		Array[Array[File]?] indexcov_of_crams = indexcovCRAM.indexout
+	}
+
 	meta {
 		author: "Ash O'Farrell"
 		email: "aofarrel@ucsc.edu"
