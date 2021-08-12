@@ -53,6 +53,10 @@ task indexcovCRAM {
 	Int thisAmSize = ceil(size(inputCram, "GB"))
 	Int finalDiskSize = indexSize + thisAmSize + indexcovAddlDisk
 
+	# Get basename of input cram, which is not the same as FILE_BASE!
+	# FILE_BASE, defined in the bash scope, includes the preceeding folders
+	String cramBasename = basename(inputCram)
+
 	command <<<
 		set -eux -o pipefail
 
@@ -77,23 +81,15 @@ task indexcovCRAM {
 				samtools index ~{inputCram} ~{inputCram}.crai
 			fi
 
+			echo "~{cramBasename}"
+			echo "${FILE_BASE}"
+
 			INPUTCRAI=$(echo ~{inputCram}.crai)
-			mkdir indexDir
-			ln -s ~{inputCram} indexDir~{basename(inputCram)}
-			ln -s ${INPUTCRAI} indexDir~{basename(inputCram)}.crai
+			mkdir ~{cramBasename}indexDir
+			ln -s ~{inputCram} ~{cramBasename}indexDir~{cramBasename}
+			ln -s ${INPUTCRAI} ~{cramBasename}indexDir~{cramBasename}.crai
 			
-			goleft indexcov --extranormalize -d indexDir/ --fai ~{refGenomeIndex} ~{inputCram}.crai
-			
-			# give everything a prefix, but also softlink the originals
-			for i in *-doc-*.txt
-			do
-				indexDir-indexcov-depth-X.html
-				mv "$i" "${i/#indexDir/~{basename(inputCram)}-indexDir}"
-			done
-			for i in *-doc-*.txt
-			do
-				ln -s "$i" "${i/#indexDir/~{basename(inputCram)}-indexDir}"
-			done
+			goleft indexcov --extranormalize -d ~{cramBasename}indexDir/ --fai ~{refGenomeIndex} ~{inputCram}.crai
 
 		elif [ -f ${FILE_BASE}.bam ]; then
 			>&2 echo "Somehow a bam file got into the cram function!"
