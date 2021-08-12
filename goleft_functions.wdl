@@ -134,7 +134,7 @@ task indexcovBAM {
 		if [ "$FILE_EXT" = "bam" ] || [ "$FILE_EXT" = "BAM" ]; then
 			if [ -f ~{inputBam}.bai ]; then
 				echo "Bai file already exists with pattern *.bam.bai"
-			elif [ -f ${inputBam}.bai ]; then
+			elif [ -f ${FILE_BASE}.bai ]; then
 				echo "Bai file already exists with pattern *.bai"
 				mv ${FILE_BASE}.bai ${FILE_BASE}.bam.bai
 			else
