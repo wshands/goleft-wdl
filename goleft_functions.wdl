@@ -132,6 +132,12 @@ task indexcovBAM {
 	Int thisAmSize = ceil(size(inputBam, "GB"))
 	Int finalDiskSize = indexSize + thisAmSize + indexcovAddlDisk
 
+	# Basename including extension but exclude preceeding folders
+	String bamBasename = basename(inputBam)
+
+	# Prefix of output files and directory, ie, bamBasename minus extension
+	String prefix = basename(sub(inputBam, "\.bam(?!.{5,})", ""))
+
 	command <<<
 
 		set -eux -o pipefail
@@ -157,10 +163,10 @@ task indexcovBAM {
 			fi
 
 			INPUTBAI=$(echo ~{inputBam}.bai)
-			mkdir indexDir
-			ln -s ~{inputBam} indexDir~{basename(inputBam)}
-			ln -s ${INPUTBAI} indexDir~{basename(inputBam)}.bai
-			goleft indexcov --directory indexDir/ *.bam
+			mkdir ~{prefix}_indexDir
+			ln -s ~{inputBam} ~{prefix}_indexDir~{bamBasename}
+			ln -s ${INPUTBAI} ~{prefix}_indexDir~{bamBasename}.bai
+			goleft indexcov --directory ~{prefix}_indexDir/ *.bam
 
 		elif [ -f ${FILE_BASE}.cram ]; then
 			>&2 echo "Cram file detected in the bam task!"
@@ -175,7 +181,7 @@ task indexcovBAM {
 	
 	output {
 		# Bams do NOT end up with "chr" before numbers on output filenames
-		Array[File] indexout = glob("indexDir/*")
+		Array[File] indexout = glob("*_indexDir/*")
 	}
 	
 	runtime {
