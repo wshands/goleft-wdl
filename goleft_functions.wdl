@@ -59,7 +59,7 @@ task indexcovCRAM {
 		# Double-check this is actually a cram file
 		FILE_EXT=$(echo ~{inputCram} | sed 's/.*\.//')
 		FILE_BASE=$(echo ~{inputCram} | sed 's/\.[^.]*$//')
-		if [ "$FILE_EXT" = "cram" || "$FILE_EXT" = "CRAM" ]; then
+		if [ "$FILE_EXT" = "cram" ] || [ "$FILE_EXT" = "CRAM" ]; then
 			# Check if an index file for the cram input exists
 			if [ -f ~{inputCram}.crai ]; then
 				echo "Crai file already exists with pattern *.cram.crai"
@@ -131,7 +131,7 @@ task indexcovBAM {
 		# Double-check this is actually a bam file
 		FILE_EXT=$(echo ~{inputBam} | sed 's/.*\.//')
 		FILE_BASE=$(echo ~{inputBam} | sed 's/\.[^.]*$//')
-		if [ "$FILE_EXT" = "bam" || "$FILE_EXT" = "BAM" ]; then
+		if [ "$FILE_EXT" = "bam" ] || [ "$FILE_EXT" = "BAM" ]; then
 			if [ -f ~{inputBam}.bai ]; then
 				echo "Bai file already exists with pattern *.bam.bai"
 			elif [ -f ${inputBam}.bai ]; then
