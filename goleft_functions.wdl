@@ -65,7 +65,7 @@ task indexcovCRAM {
 				echo "Crai file already exists with pattern *.cram.crai"
 			elif [ -f ${FILE_BASE}.crai ]; then
 				echo "Crai file already exists with pattern *.crai"
-				mv ${FILE_BASE}.crai ${FILE_BASE}.cram.crai
+				mv ${FILE_BASE}.crai ${FILE_BASE}.cram.crai  # Rename with .cram.crai pattern
 			else
 				echo "Input crai file not found. We searched for:"
 				echo "--------------------"
@@ -81,7 +81,19 @@ task indexcovCRAM {
 			mkdir indexDir
 			ln -s ~{inputCram} indexDir~{basename(inputCram)}
 			ln -s ${INPUTCRAI} indexDir~{basename(inputCram)}.crai
+			
 			goleft indexcov --extranormalize -d indexDir/ --fai ~{refGenomeIndex} ~{inputCram}.crai
+			
+			# give everything a prefix, but also softlink the originals
+			for i in *-doc-*.txt
+			do
+				indexDir-indexcov-depth-X.html
+				mv "$i" "${i/#indexDir/~{basename(inputCram)}-indexDir}"
+			done
+			for i in *-doc-*.txt
+			do
+				ln -s "$i" "${i/#indexDir/~{basename(inputCram)}-indexDir}"
+			done
 
 		elif [ -f ${FILE_BASE}.bam ]; then
 			>&2 echo "Somehow a bam file got into the cram function!"
@@ -89,6 +101,7 @@ task indexcovCRAM {
 			exit 1
 		else
 			>&2 echo "Unknown file input, please report to the dev."
+			exit 1
 		fi
 
 	>>>
@@ -160,6 +173,7 @@ task indexcovBAM {
 			exit 1
 		else
 			>&2 echo "Unknown file input, please report to the dev."
+			exit 1
 		fi
 
 	>>>
