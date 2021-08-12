@@ -53,9 +53,11 @@ task indexcovCRAM {
 	Int thisAmSize = ceil(size(inputCram, "GB"))
 	Int finalDiskSize = indexSize + thisAmSize + indexcovAddlDisk
 
-	# Get basename of input cram, which is not the same as FILE_BASE!
-	# FILE_BASE, defined in the bash scope, includes the preceeding folders
+	# Basename including extension but exclude preceeding folders
 	String cramBasename = basename(inputCram)
+
+	# Prefix of output files and directory, ie, cramBasename minus extension
+	String prefix = basename(sub(inputCram, "\.cram(?!.{5,})", ""))
 
 	command <<<
 		set -eux -o pipefail
@@ -81,15 +83,12 @@ task indexcovCRAM {
 				samtools index ~{inputCram} ~{inputCram}.crai
 			fi
 
-			echo "~{cramBasename}"
-			echo "${FILE_BASE}"
-
 			INPUTCRAI=$(echo ~{inputCram}.crai)
-			mkdir ~{cramBasename}indexDir
-			ln -s ~{inputCram} ~{cramBasename}indexDir~{cramBasename}
-			ln -s ${INPUTCRAI} ~{cramBasename}indexDir~{cramBasename}.crai
+			mkdir ~{prefix}_indexDir
+			ln -s ~{inputCram} ~{prefix}_indexDir~{cramBasename}
+			ln -s ${INPUTCRAI} ~{prefix}_indexDir~{cramBasename}.crai
 			
-			goleft indexcov --extranormalize -d ~{cramBasename}indexDir/ --fai ~{refGenomeIndex} ~{inputCram}.crai
+			goleft indexcov --extranormalize -d ~{prefix}_indexDir/ --fai ~{refGenomeIndex} ~{inputCram}.crai
 
 		elif [ -f ${FILE_BASE}.bam ]; then
 			>&2 echo "Somehow a bam file got into the cram function!"
@@ -104,7 +103,7 @@ task indexcovCRAM {
 
 	output {
 		# Crams end up with "chr" before numbers on output filenames
-		Array[File] indexout = glob("indexDir/*")
+		Array[File] indexout = glob("*_indexDir/*")
 	}
 	
 	runtime {
