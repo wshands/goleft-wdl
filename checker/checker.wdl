@@ -1,7 +1,7 @@
 version 1.0
 
 # Replace the first URL here with the URL of the workflow to be checked.
-import "https://raw.githubusercontent.com/aofarrel/goleft-wdl/prefix_outputs/covstats/goleft_functions.wdl" as goleft
+import "https://raw.githubusercontent.com/aofarrel/goleft-wdl/prefix_outputs/goleft_functions.wdl" as goleft
 import "https://raw.githubusercontent.com/aofarrel/checker-WDL-templates/v0.9.3/tasks/filecheck_task.wdl" as checker_file
 import "https://raw.githubusercontent.com/aofarrel/checker-WDL-templates/v0.9.3/tasks/arraycheck_task.wdl" as checker_array
 
@@ -20,10 +20,8 @@ workflow goleft_checker {
 		Array[File] truth_indexcovCRAM
 	}
 
-	call blank
-
 	# Run the workflow to be checked
-	call check_me.goleft_functions {
+	call goleft.goleft_functions {
 		input:
 			forceIndexcov = forceIndexcov,
 			inputBamsOrCrams = inputBamsOrCrams,
@@ -32,24 +30,26 @@ workflow goleft_checker {
 	}
 
 	if (defined(goleft_functions.indexcov_of_bams)) {
-		scatter (an_output_array in goleft_functions.indexcov_of_bams)
-		call checker_array.arraycheck_optional as scatteredChecker {
-			input:
-				test = an_output_array,
-				truth = truth_indexcovBAM
+		scatter (an_output_array in goleft_functions.indexcov_of_bams) {
+			call checker_array.arraycheck_optional as check_indexcov_bams {
+				input:
+					test = an_output_array,
+					truth = truth_indexcovBAM
+			}
 		}
 	}
 
 	if (defined(goleft_functions.indexcov_of_crams)) {
-		scatter (an_output_array in goleft_functions.indexcov_of_crams)
-		call checker_array.arraycheck_optional as scatteredChecker {
-			input:
-				test = an_output_array,
-				truth = truth_indexcovCRAM
+		scatter (an_output_array in goleft_functions.indexcov_of_crams) {
+			call checker_array.arraycheck_optional as check_indexcov_crams {
+				input:
+					test = an_output_array,
+					truth = truth_indexcovCRAM
+			}
 		}
 	}
 
-	call checker_file.filecheck as singleChecker {
+	call checker_file.filecheck as check_covstats {
 		input:
 			test = goleft_functions.covstats_report,
 			truth = truth_report
