@@ -53,6 +53,12 @@ task indexcovCRAM {
 	Int thisAmSize = ceil(size(inputCram, "GB"))
 	Int finalDiskSize = indexSize + thisAmSize + indexcovAddlDisk
 
+	# Basename including extension but exclude preceeding folders
+	String cramBasename = basename(inputCram)
+
+	# Prefix of output files and directory, ie, cramBasename minus extension
+	String prefix = basename(sub(inputCram, "\.cram(?!.{5,})", ""))
+
 	command <<<
 		set -eux -o pipefail
 
@@ -65,7 +71,7 @@ task indexcovCRAM {
 				echo "Crai file already exists with pattern *.cram.crai"
 			elif [ -f ${FILE_BASE}.crai ]; then
 				echo "Crai file already exists with pattern *.crai"
-				mv ${FILE_BASE}.crai ${FILE_BASE}.cram.crai
+				mv ${FILE_BASE}.crai ${FILE_BASE}.cram.crai  # Rename with .cram.crai pattern
 			else
 				echo "Input crai file not found. We searched for:"
 				echo "--------------------"
@@ -78,10 +84,11 @@ task indexcovCRAM {
 			fi
 
 			INPUTCRAI=$(echo ~{inputCram}.crai)
-			mkdir indexDir
-			ln -s ~{inputCram} indexDir~{basename(inputCram)}
-			ln -s ${INPUTCRAI} indexDir~{basename(inputCram)}.crai
-			goleft indexcov --extranormalize -d indexDir/ --fai ~{refGenomeIndex} ~{inputCram}.crai
+			mkdir ~{prefix}_indexDir
+			ln -s ~{inputCram} ~{prefix}_indexDir~{cramBasename}
+			ln -s ${INPUTCRAI} ~{prefix}_indexDir~{cramBasename}.crai
+			
+			goleft indexcov --extranormalize -d ~{prefix}_indexDir/ --fai ~{refGenomeIndex} ~{inputCram}.crai
 
 		elif [ -f ${FILE_BASE}.bam ]; then
 			>&2 echo "Somehow a bam file got into the cram function!"
@@ -89,13 +96,14 @@ task indexcovCRAM {
 			exit 1
 		else
 			>&2 echo "Unknown file input, please report to the dev."
+			exit 1
 		fi
 
 	>>>
 
 	output {
 		# Crams end up with "chr" before numbers on output filenames
-		Array[File] indexout = glob("indexDir/*")
+		Array[File] indexout = glob("*_indexDir/*")
 	}
 	
 	runtime {
@@ -124,6 +132,12 @@ task indexcovBAM {
 	Int thisAmSize = ceil(size(inputBam, "GB"))
 	Int finalDiskSize = indexSize + thisAmSize + indexcovAddlDisk
 
+	# Basename including extension but exclude preceeding folders
+	String bamBasename = basename(inputBam)
+
+	# Prefix of output files and directory, ie, bamBasename minus extension
+	String prefix = basename(sub(inputBam, "\.bam(?!.{5,})", ""))
+
 	command <<<
 
 		set -eux -o pipefail
@@ -149,10 +163,10 @@ task indexcovBAM {
 			fi
 
 			INPUTBAI=$(echo ~{inputBam}.bai)
-			mkdir indexDir
-			ln -s ~{inputBam} indexDir~{basename(inputBam)}
-			ln -s ${INPUTBAI} indexDir~{basename(inputBam)}.bai
-			goleft indexcov --directory indexDir/ *.bam
+			mkdir ~{prefix}_indexDir
+			ln -s ~{inputBam} ~{prefix}_indexDir~{bamBasename}
+			ln -s ${INPUTBAI} ~{prefix}_indexDir~{bamBasename}.bai
+			goleft indexcov --directory ~{prefix}_indexDir/ *.bam
 
 		elif [ -f ${FILE_BASE}.cram ]; then
 			>&2 echo "Cram file detected in the bam task!"
@@ -160,13 +174,14 @@ task indexcovBAM {
 			exit 1
 		else
 			>&2 echo "Unknown file input, please report to the dev."
+			exit 1
 		fi
 
 	>>>
 	
 	output {
 		# Bams do NOT end up with "chr" before numbers on output filenames
-		Array[File] indexout = glob("indexDir/*")
+		Array[File] indexout = glob("*_indexDir/*")
 	}
 	
 	runtime {
