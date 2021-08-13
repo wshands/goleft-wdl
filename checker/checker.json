@@ -1,0 +1,30 @@
+{
+  "goleft_checker.inputBamsOrCrams": [
+    "gs://topmed_workflow_testing/bravo/bams/HG02840.bam",
+    "gs://topmed_workflow_testing/bravo/bams/NA19130.bam",
+    "gs://topmed_workflow_testing/topmed_aligner/input_files/NWD176325.recab.cram",
+    "gs://topmed_workflow_testing/topmed_aligner/input_files/NWD136397.0005.recab.cram",
+    "gs://topmed_workflow_testing/topmed_aligner/input_files/NWD119836.0005.recab.cram"
+ ],
+  "goleft_checker.inputIndexes": [
+    "gs://topmed_workflow_testing/bravo/bams/NA18995.bam.bai",
+    "gs://topmed_workflow_testing/topmed_aligner/input_files/NWD136397.0005.recab.cram.crai",
+    "gs://topmed_workflow_testing/goleft/renamed_crai/NWD119836.0005.recab.crai"
+  ],
+  "goleft_checker.refGenome": "gs://topmed_workflow_testing/topmed_variant_caller/reference_files/hg38/hs38DH.fa",
+  "goleft_checker.truth_report": "gs://topmed_workflow_testing/goleft/truth_files/reports.txt",
+  "goleft_checker.truth_indexcovBAM": [
+    "gs://topmed_workflow_testing/goleft/truth_files/HG02840_indexDir-indexcov-depth-19.png",
+    "gs://topmed_workflow_testing/goleft/truth_files/HG02840_indexDir-indexcov-roc-12.png",
+    "gs://topmed_workflow_testing/goleft/truth_files/NA19130_indexDir-indexcov-depth-8.png",
+    "gs://topmed_workflow_testing/goleft/truth_files/NA19130_indexDir-indexcov-roc-12.png"
+  ],
+  "goleft_checker.truth_indexcovCRAM": [
+    "gs://topmed_workflow_testing/goleft/truth_files/NWD119836.0005.recab_indexDir-indexcov-depth-chr7.png",
+    "gs://topmed_workflow_testing/goleft/truth_files/NWD119836.0005.recab_indexDir-indexcov-roc-chr2.png",
+    "gs://topmed_workflow_testing/goleft/truth_files/NWD136397.0005.recab_indexDir-indexcov-depth-chr7.png",
+    "gs://topmed_workflow_testing/goleft/truth_files/NWD136397.0005.recab_indexDir-indexcov-roc-chr7.png",
+    "gs://topmed_workflow_testing/goleft/truth_files/NWD176325.recab_indexDir-indexcov-depth-chr10.png",
+    "gs://topmed_workflow_testing/goleft/truth_files/NWD176325.recab_indexDir-indexcov-roc-chrX.png"
+  ]
+}
