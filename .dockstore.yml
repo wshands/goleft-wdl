@@ -4,4 +4,3 @@ workflows:
      primaryDescriptorPath: goleft_functions.wdl
      testParameterFiles:
          - goleft_terra.json
-     name: goleft-wdl
