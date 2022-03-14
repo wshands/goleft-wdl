@@ -1,4 +1,4 @@
-Walts test
+Walts test 2
 # goleft-wdl
 Collection of miscellanous WDLized [goleft](https://github.com/brentp/goleft) functions. Included are the covstats and indexcov functions.
 
